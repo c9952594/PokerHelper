@@ -1,4 +1,6 @@
-﻿type Suit = 
+﻿
+
+type Suit = 
     | Heart = 1
     | Diamond = 2
     | Spade = 3
