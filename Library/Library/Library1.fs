@@ -55,61 +55,44 @@ let rec isStraight (hand:list<Card>) =
     let sortedHand = hand |> List.sortBy (fun card -> card.rank)
     let first = List.head sortedHand
     let last = List.last sortedHand
-    if (first.rank = Rank.Ace && last.rank = Rank.King)
-    then
-        isStraight ((List.tail sortedHand)@[{ rank = Rank.Ace'; suit = first.suit }])
-    else
-        ((int last.rank) - (int first.rank)) = 4
-
+    match (first.rank, last.rank) with
+    | (Rank.Ace, Rank.King) -> 
+        let highAce = { rank = Rank.Ace'; suit = first.suit }
+        let sortedHandWithoutLowAce = List.tail sortedHand
+        let handWithHighAce = highAce::sortedHandWithoutLowAce
+        isStraight handWithHighAce
+    | _ -> 
+        (int (last.rank - first.rank)) = 4
+        
 let isFlush (hand:list<Card>) = 
-    let suit = hand.[0].suit
-    hand |> List.forall (fun card -> card.suit = suit)
+    hand
+    |> List.distinctBy (fun card -> card.suit)
+    |> List.length = 1
 
 let isStraightFlush (hand:list<Card>) = 
     (isFlush hand) && (isStraight hand)
 
-let group hand = 
+let countByRank hand =
     hand 
     |> List.map(fun card -> card.rank) 
-    |> List.countBy id 
+    |> List.countBy id
+    |> List.map (fun (_, count) -> count)
+    |> List.sort 
 
 let isFourOfAKind (hand:list<Card>) = 
-    group hand 
-    |> List.exists (fun (rank,count) -> count = 4)
+    countByRank hand = [1;4]
 
 let isFullHouse (hand:list<Card>) = 
-    let groups = group hand
+    countByRank hand = [2;3]
 
-    let threeOfAKind = 
-        groups
-        |> List.exists (fun (rank,count) -> count = 3)
-
-    let twodifferent = 
-        groups
-        |> List.exists (fun (rank,count) -> count = 2)
-        
-    threeOfAKind && twodifferent
-
-let isThreeOfAKind (hand:list<Card>) = 
-    let groups = group hand
-
-    let threeOfAKind = 
-        groups
-        |> List.exists (fun (_,count) -> count = 3)
-
-    let twodifferent = 
-        groups
-        |> List.length = (hand.Length - 2)
-        
-    threeOfAKind && twodifferent
+let isThreeOfAKind (hand:list<Card>) =
+    countByRank hand = [1;1;3]
 
 let isTwoPair (hand:list<Card>) = 
-    group hand 
-    |> List.length = (hand.Length - 2)
+    countByRank hand = [1;2;2]
 
 let isPair (hand:list<Card>) = 
-    group hand 
-    |> List.length = (hand.Length - 1)
+    countByRank hand = [1;1;1;2]
 
 let matchHand hand = 
     match hand with
@@ -122,8 +105,6 @@ let matchHand hand =
     | _ when isTwoPair hand -> HandType.TwoPair
     | _ when isPair hand -> HandType.Pair
     | _ -> HandType.HighCard
-
-
 
 open NUnit.Framework
 open FsUnit
@@ -184,6 +165,7 @@ let flushExample = [
     { rank = Rank.Four; suit = Suit.Diamond };
 ]
 
+    
 let fullHouseExample = [
     { rank = Rank.Ace; suit = Suit.Diamond };
     { rank = Rank.Ace; suit = Suit.Club };
@@ -191,6 +173,7 @@ let fullHouseExample = [
     { rank = Rank.Eight; suit = Suit.Diamond };
     { rank = Rank.Eight; suit = Suit.Club };
 ]
+
 
 let fourOfAKindExample = [
     { rank = Rank.Ace; suit = Suit.Diamond };
