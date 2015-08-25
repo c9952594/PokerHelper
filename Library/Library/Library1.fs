@@ -1,5 +1,6 @@
 ﻿module PokerLibrary
 
+#time
 type Suit = 
     | Heart = 1
     | Diamond = 2
@@ -25,115 +26,110 @@ type Rank =
 type Card = { rank: Rank; suit: Suit }
 
 type HandType =
-    | HighCard
-    | Pair
-    | TwoPair
-    | ThreeOfAKind
-    | Straight
-    | Flush
-    | FullHouse
+    | StraightFlush
     | FourOfAKind
-    | StrightFlush
+    | FullHouse
+    | Flush
+    | Straight
+    | ThreeOfAKind
+    | TwoPair
+    | Pair
+    | HighCard
 
-let deck = [
-    for s in 1..4 do
-        for r in 1..13 do
-            yield { rank = enum<Rank>r; suit = enum<Suit>s }
-]
+let hasStraight (hand:list<Card>) =
+    match hand.Length with
+    | 0 | 1 | 2 | 3 | 4 -> false
+    | _ ->
+        let sortedHand = hand |> List.sortBy (fun card -> card.rank)
+        let firstCard = List.head sortedHand
 
+        match firstCard.rank with
+        | Rank.Ace ->
+            let highAce = { rank = Rank.Ace'; suit = firstCard.suit }
+            sortedHand@[highAce]
+        | _ ->
+            sortedHand
+        |> List.map (fun card -> (int card.rank))
+        |> List.pairwise
+        |> List.map (fun (a,b) -> b - a)
+        |> List.windowed 4
+        |> List.contains [1;1;1;1]
+
+let hasFlush (hand:list<Card>) = 
+    hand
+    |> List.distinctBy (fun card -> card.suit)
+    |> List.length = 1
+
+let hasStraightFlush (hand:list<Card>) = 
+    (hasFlush hand) && (hasStraight hand)
+
+let countByRank hand =
+    hand 
+    |> List.map(fun card -> (int card.rank)) 
+    |> List.countBy id
+    |> List.map (fun (_, count) -> count)
+
+let hasFourOfAKind (hand:list<Card>) = 
+    hand
+    |> countByRank 
+    |> List.contains 4
+
+let hasFullHouse (hand:list<Card>) = 
+    let ranked = hand |> countByRank 
+    ranked
+    |> List.filter (fun item -> item = 3)
+    |> List.length
+    |> function 
+       | 0 -> false
+       | 1 -> ranked |> List.contains 2
+       | _ -> true
+
+let hasThreeOfAKind (hand:list<Card>) =
+    hand
+    |> countByRank 
+    |> List.contains 3
+
+let hasTwoPair (hand:list<Card>) = 
+    hand
+    |> countByRank
+    |> List.filter (fun item -> item = 2)
+    |> List.length
+    |> function
+       | 0 | 1 -> false
+       | _ -> true
+
+let hasPair (hand:list<Card>) = 
+    hand
+    |> countByRank 
+    |> List.contains 2
+
+let matchHand hand = 
+    match hand with
+    | _ when hand |> hasStraightFlush -> HandType.StraightFlush
+    | _ when hand |> hasFourOfAKind -> HandType.FourOfAKind
+    | _ when hand |> hasFullHouse -> HandType.FullHouse
+    | _ when hand |> hasFlush -> HandType.Flush
+    | _ when hand |> hasStraight -> HandType.Straight
+    | _ when hand |> hasThreeOfAKind -> HandType.ThreeOfAKind
+    | _ when hand |> hasTwoPair -> HandType.TwoPair
+    | _ when hand |> hasPair -> HandType.Pair
+    | _ -> HandType.HighCard
+
+//let deck = [
+//    for s in 1..4 do
+//        for r in 1..13 do
+//            yield { rank = enum<Rank>r; suit = enum<Suit>s }
+//]
+//
 //let possibleHands = [
 //    for firstCard in 0..47 do
 //        for secondCard in (firstCard + 1)..48 do
 //            for thirdCard in (secondCard + 1)..49 do
 //                for fourthCard in (thirdCard + 1)..50 do
 //                    for fifthCard in (fourthCard + 1)..51 do
-//                        yield [deck.[firstCard]; deck.[secondCard]; deck.[thirdCard]; deck.[fourthCard]; deck.[fifthCard]]]
-
-    
-let rec isStraight (hand:list<Card>) =
-    let rec inner previousCard hand longestRun =
-        match hand with
-        | head::tail -> 
-            if (((int previousCard.rank) + 1) = (int head.rank)) 
-            then inner head tail (longestRun + 1)
-            else inner head tail longestRun
-        | [] -> longestRun = 5
-    
-    let lowSortedHand = List.sortBy (fun card -> card.rank) hand
-    
-    match lowSortedHand with
-    | (head:Card)::tail -> 
-        match head.rank with
-        | Rank.Ace -> 
-            let low = inner head tail 1
-
-            let highAce = { rank = Rank.Ace'; suit = head.suit }
-            let highSortedHand = tail@[highAce]
-            let previous::hand = highSortedHand
-            let high = inner previous hand 1
-            low || high
-        | _ -> 
-            inner head tail 1
-    | [] -> false
-
-
-//
-//let rec isStraight (hand:list<Card>) =
-//    let sortedHand = hand |> List.sortBy (fun card -> card.rank)
-//    let first = List.head sortedHand
-//    let last = List.last sortedHand
-//    match (first.rank, last.rank) with
-//    | (Rank.Ace, Rank.King) -> 
-//        let highAce = { rank = Rank.Ace'; suit = first.suit }
-//        let sortedHandWithoutLowAce = List.tail sortedHand
-//        let handWithHighAce = highAce::sortedHandWithoutLowAce
-//        isStraight handWithHighAce
-//    | _ -> 
-//        (int (last.rank - first.rank)) = 4
-//       
-
-
-let isFlush (hand:list<Card>) = 
-    hand
-    |> List.distinctBy (fun card -> card.suit)
-    |> List.length = 1
-
-let isStraightFlush (hand:list<Card>) = 
-    (isFlush hand) && (isStraight hand)
-
-let countByRank hand =
-    hand 
-    |> List.map(fun card -> card.rank) 
-    |> List.countBy id
-    |> List.map (fun (_, count) -> count)
-    |> List.sort 
-
-let isFourOfAKind (hand:list<Card>) = 
-    countByRank hand = [1;4]
-
-let isFullHouse (hand:list<Card>) = 
-    countByRank hand = [2;3]
-
-let isThreeOfAKind (hand:list<Card>) =
-    countByRank hand = [1;1;3]
-
-let isTwoPair (hand:list<Card>) = 
-    countByRank hand = [1;2;2]
-
-let isPair (hand:list<Card>) = 
-    countByRank hand = [1;1;1;2]
-
-let matchHand hand = 
-    match hand with
-    | _ when isStraightFlush hand -> HandType.StrightFlush
-    | _ when isFourOfAKind hand -> HandType.FourOfAKind
-    | _ when isFullHouse hand -> HandType.FullHouse
-    | _ when isFlush hand -> HandType.Flush
-    | _ when isStraight hand -> HandType.Straight
-    | _ when isThreeOfAKind hand -> HandType.ThreeOfAKind
-    | _ when isTwoPair hand -> HandType.TwoPair
-    | _ when isPair hand -> HandType.Pair
-    | _ -> HandType.HighCard
+//                        let hand = [deck.[firstCard]; deck.[secondCard]; deck.[thirdCard]; deck.[fourthCard]; deck.[fifthCard]]
+//                        let handType = matchHand hand
+//                        yield (handType, hand)]
 
 open NUnit.Framework
 open FsUnit
@@ -232,7 +228,7 @@ let straightFlushExample = [
 type ``matchHand test`` ()=
    [<Test>] member test.
     ``with straightFlushExample`` ()=
-        matchHand straightFlushExample |> should equal HandType.StrightFlush
+        matchHand straightFlushExample |> should equal HandType.StraightFlush
    [<Test>] member test.
     ``with fourOfAKindExample`` ()=
         matchHand fourOfAKindExample |> should equal HandType.FourOfAKind

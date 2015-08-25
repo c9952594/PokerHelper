@@ -55,7 +55,6 @@
     <Compile Include="Library1.fs" />
     <Content Include="packages.config" />
     <Content Include="app.config" />
-    <Compile Include="FsUnitSample.fs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="FsUnit.CustomMatchers">
