@@ -1,6 +1,5 @@
 ﻿module PokerLibrary
 
-#time
 type Suit = 
     | Heart = 1
     | Diamond = 2
@@ -115,11 +114,21 @@ let matchHand hand =
     | _ when hand |> hasPair -> HandType.Pair
     | _ -> HandType.HighCard
 
-//let deck = [
-//    for s in 1..4 do
-//        for r in 1..13 do
-//            yield { rank = enum<Rank>r; suit = enum<Suit>s }
-//]
+
+let deck = [
+    for s in 1..4 do
+        for r in 1..13 do
+            yield { rank = enum<Rank>r; suit = enum<Suit>s }
+]
+
+
+let rec makeHands bottom top =
+    if (bottom = top)
+    then []
+    else List.collect (fun elem -> elem::(makeHands (elem+1) top)) [bottom..top]
+        
+makeHands 0 5
+
 //
 //let possibleHands = [
 //    for firstCard in 0..47 do
@@ -130,6 +139,33 @@ let matchHand hand =
 //                        let hand = [deck.[firstCard]; deck.[secondCard]; deck.[thirdCard]; deck.[fourthCard]; deck.[fifthCard]]
 //                        let handType = matchHand hand
 //                        yield (handType, hand)]
+
+let rec generate first last fromloop toloop =
+    [first..last]
+    |> generate ((+) 1) last
+
+generate 0 4 0 2
+
+let a = seq {0..4}
+let b = seq {1..5}
+let c = seq {2..6}
+
+Seq.map (fun d -> Seq.map (fun e -> Seq.map (fun f -> d::e::f::[]) c) b) a
+|> Seq.toArray
+
+
+
+let handGenerator deck handsize = 
+    let index = (handsize - 1)
+    let hand = [0..index]
+    let maxIndex = (List.length deck) - 1
+    
+handGenerator [0..6] 3
+
+let deck = [0..6]
+let hand = [0..2]
+let index = 2
+
 
 open NUnit.Framework
 open FsUnit
