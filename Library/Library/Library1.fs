@@ -1,5 +1,7 @@
 ﻿module PokerLibrary
 
+
+
 type Suit = 
     | Heart = 1
     | Diamond = 2
@@ -121,51 +123,40 @@ let deck = [
             yield { rank = enum<Rank>r; suit = enum<Suit>s }
 ]
 
+let generateSequences decksize handsize = 
+    let rec _generate collected low high acc = 
+        if (List.length collected = handsize)
+        then 
+            (List.sort collected)::acc
+        else 
+            List.fold(fun acc' index -> 
+                _generate 
+                    (index::collected) 
+                    (index + 1) 
+                    (high + 1) 
+                    acc'
+            ) acc [low..high]    
+    _generate [] 0 (decksize - handsize) []
 
-let rec makeHands bottom top =
-    if (bottom = top)
-    then []
-    else List.collect (fun elem -> elem::(makeHands (elem+1) top)) [bottom..top]
-        
-makeHands 0 5
+let convertSequencesToHands (deck:list<Card>) sequences =
+    sequences 
+    |> List.map (fun hand -> 
+        hand 
+        |> List.map(fun card -> deck.[card])) 
 
-//
-//let possibleHands = [
-//    for firstCard in 0..47 do
-//        for secondCard in (firstCard + 1)..48 do
-//            for thirdCard in (secondCard + 1)..49 do
-//                for fourthCard in (thirdCard + 1)..50 do
-//                    for fifthCard in (fourthCard + 1)..51 do
-//                        let hand = [deck.[firstCard]; deck.[secondCard]; deck.[thirdCard]; deck.[fourthCard]; deck.[fifthCard]]
-//                        let handType = matchHand hand
-//                        yield (handType, hand)]
+let matchHandTypes hands = 
+    hands |> List.map(fun hand -> 
+        (matchHand hand, hand))
 
-let rec generate first last fromloop toloop =
-    [first..last]
-    |> generate ((+) 1) last
+let matches =
+    generateSequences (List.length deck) 5
+    |> convertSequencesToHands deck
+    |> matchHandTypes
 
-generate 0 4 0 2
-
-let a = seq {0..4}
-let b = seq {1..5}
-let c = seq {2..6}
-
-Seq.map (fun d -> Seq.map (fun e -> Seq.map (fun f -> d::e::f::[]) c) b) a
-|> Seq.toArray
-
-
-
-let handGenerator deck handsize = 
-    let index = (handsize - 1)
-    let hand = [0..index]
-    let maxIndex = (List.length deck) - 1
-    
-handGenerator [0..6] 3
-
-let deck = [0..6]
-let hand = [0..2]
-let index = 2
-
+let allFourOfaKind = 
+    matches 
+    |> List.filter (fun (handType, hand) -> 
+        handType = HandType.FourOfAKind)
 
 open NUnit.Framework
 open FsUnit
