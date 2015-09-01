@@ -2,102 +2,120 @@
 
 open PokerTypes
 
+// I've figured out that it would be easier to treat aces as 14
+// This will mean we only have to map the list for straights
+
 let (|StraightFlush|_|) (hand:Hand) =
-    let highAcesHand = 
-        hand
-        |> List.filter (fun card -> card.rank = Rank.Ace)
-        |> List.map (fun card -> { rank = Rank.Ace'; suit = card.suit })
-        |> List.append hand
-
-    highAcesHand
-    |> List.sortBy (fun card -> card.suit, -(int card.rank))
+    hand 
+    |> List.choose (fun elem -> 
+        match elem.rank with
+        | Rank.Ace -> Some({ rank = Rank.Ace'; suit = elem.suit })
+        | _ -> None)
+    |> List.append hand
+    |> List.sortByDescending (fun card -> card.suit, (int card.rank))
     |> List.windowed 5
-    |> List.tryFind(fun window ->
-        let firstCard = window.[0]
-        let allSameSuit = window |> List.forall(fun card -> card.suit = firstCard.suit)
-        if (allSameSuit)
-        then
-            window
-            |> List.pairwise
-            |> List.map(fun (a,b) -> (int a.rank) - (int b.rank))
-            |> List.forall (fun diff -> diff = 1)
-        else 
-            false)
-
+    |> List.tryFind (fun window -> 
+        window
+        |> List.pairwise
+        |> List.forall (fun (a,b) -> 
+            (a.suit = b.suit) && 
+            ((int a.rank) - 1 = (int b.rank))))
+    
 let (|FourOfaKind|_|) (hand:Hand) =
-    let acesHighHand =
-        hand
-        |> List.map (fun card -> 
-            match card.rank with
-            | Rank.Ace -> { rank = Rank.Ace'; suit = card.suit }
-            | _ -> card)
+    hand
+    |> List.sortByDescending (fun card -> (int card.rank))
+    |> List.windowed 4
+    |> List.tryFind(fun window -> 
+        window
+        |> List.pairwise
+        |> List.forall(fun (a,b) -> a.rank = b.rank))
+    |> function
+        | None -> None
+        | Some found ->
+            let kicker = 
+                Set.difference (Set.ofList hand) (Set.ofList found)
+                |> Set.toList
+                |> List.maxBy (fun (card:Card) -> card.rank)
+            Some (
+                found@[kicker]
+                |> List.map (fun card -> 
+                    match card.rank with
+                    | Rank.Ace -> { rank = Rank.Ace'; suit = card.suit }
+                    | _ -> card))
 
-    let (fourOfaKind, notFourOfaKind) =
-        acesHighHand
-        |> List.map (fun card -> card.rank)
-        |> List.countBy id
-        |> List.partition(fun (rank, count) -> count = 4)
-        
-    match List.isEmpty fourOfaKind with
-    | true -> None
-    | false -> 
-        let kickerRank = 
-            notFourOfaKind
-            |> List.sortBy (fun (rank, count) -> -(int rank))
-            |> List.head
-            |> fst
+let (|Flush|_|) (hand:Hand) =
+    hand
+    |> List.map (fun card -> 
+        match card.rank with
+        | Rank.Ace -> { rank = Rank.Ace'; suit = card.suit }
+        | _ -> card)
+    |> List.sortByDescending (fun card -> card.suit, (int card.rank))
+    |> List.windowed 5
+    |> List.tryFind (fun window ->
+        window
+        |> List.pairwise
+        |> List.forall (fun (a,b) -> a.suit = b.suit))
 
-        let kickerCard = List.find (fun (card:Card) -> card.rank = kickerRank) acesHighHand
-
-        let fourOfAKindRank = fourOfaKind |> List.head |> fst
-        let fourOfAKindCards = 
-            acesHighHand 
-            |> List.filter (fun card -> card.rank = fourOfAKindRank)
-                
-        Some (fourOfAKindCards@[kickerCard])
-
-//let (|Flush|_|) (hand:Hand) =
-//    let suit = 
-//        hand
-//        |> List.map (fun card -> card.suit)
-//        |> List.countBy id
-//        |> List.sortByDescending (fun (suit,count) -> count)
-//        |> List.head
-//
-//    if (snd suit >= 5)
-//    then Some (fst suit)
-//    else None
 
 let (|Straight|_|) (hand:Hand) =
-    let highAcesHand = 
-        hand
-        |> List.filter (fun card -> card.rank = Rank.Ace)
-        |> List.map (fun card -> { rank = Rank.Ace'; suit = card.suit })
+    let handWithHighAces = 
+        hand 
+        |> List.choose (fun elem -> 
+            match elem.rank with
+            | Rank.Ace -> Some({ rank = Rank.Ace'; suit = elem.suit })
+            | _ -> None)
         |> List.append hand
 
-    let foundHand = 
-        highAcesHand
-        |> List.map (fun card -> card.rank)
-        |> List.distinct
-        |> List.sortBy (fun rank -> -(int rank))
-        |> List.windowed 5
-        |> List.tryFind(fun window ->
-            window
-            |> List.pairwise
-            |> List.forall (fun (a,b) -> (int a) - (int b) = 1))
-            
-    match foundHand with
-    | None -> None
-    | Some value -> 
-        let findCardFromRank rank = List.find (fun (card:Card) -> card.rank = rank) highAcesHand
-        let mapHand hand = List.map findCardFromRank hand
-        Some(mapHand value)
+    handWithHighAces
+    |> List.map (fun card -> card.rank)
+    |> List.distinct
+    |> List.sortByDescending (fun rank -> (int rank))
+    |> List.windowed 5
+    |> List.tryFind(fun window ->
+        window
+        |> List.pairwise
+        |> List.forall (fun (a,b) -> (int a) - (int b) = 1))
+    |> function
+        | None -> None
+        | Some found ->
+            found
+            |> List.map (fun rank -> 
+                handWithHighAces
+                |> List.find (fun card -> card.rank = rank))
+            |> Some
+
+
+//
+//    let highAcesHand = 
+//        hand
+//        |> List.filter (fun card -> card.rank = Rank.Ace)
+//        |> List.map (fun card -> { rank = Rank.Ace'; suit = card.suit })
+//        |> List.append hand
+//
+//    let foundHand = 
+//        highAcesHand
+//        |> List.map (fun card -> card.rank)
+//        |> List.distinct
+//        |> List.sortByDescending (fun rank -> (int rank))
+//        |> List.windowed 5
+//        |> List.tryFind(fun window ->
+//            window
+//            |> List.pairwise
+//            |> List.forall (fun (a,b) -> (int a) - (int b) = 1))
+//            
+//    match foundHand with
+//    | None -> None
+//    | Some value -> 
+//        let findCardFromRank rank = List.find (fun (card:Card) -> card.rank = rank) highAcesHand
+//        let mapHand hand = List.map findCardFromRank hand
+//        Some(mapHand value)
         
 let parseHand (hand:list<Card>) =
     let ranks = List.map (fun (c:Card) -> (int c.rank))
     match hand with
     | StraightFlush found -> Some({ rank = HandType.StraightFlush; hand = found; ranking = (ranks found)})
     | FourOfaKind found -> Some({ rank = HandType.FourOfAKind; hand = found; ranking = (ranks found)})
+    | Flush found -> Some({ rank = HandType.Flush; hand = found; ranking = (ranks found)})
     | Straight found -> Some({ rank = HandType.Straight; hand = found; ranking = (ranks found)})
     | _ -> None
 
