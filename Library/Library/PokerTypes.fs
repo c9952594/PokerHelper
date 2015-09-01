@@ -7,7 +7,7 @@ type Suit =
     | Diamond = 4
 
 type Rank = 
-    Ace = 1 
+    Ace = 14
     | Two = 2 
     | Three = 3 
     | Four = 4 
@@ -20,7 +20,7 @@ type Rank =
     | Jack = 11 
     | Queen = 12 
     | King = 13 
-    | Ace' = 14
+    | Ace' = 1
 
 type Card = { 
     suit: Suit; 
