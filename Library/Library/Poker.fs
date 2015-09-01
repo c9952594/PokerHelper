@@ -57,12 +57,12 @@ let (|Straight|_|) (hand:Hand) =
             handWithHighAces
             |> List.map (fun card -> card.rank)
             |> List.distinct
-            |> List.sortByDescending (fun rank -> (int rank))
+            |> List.sortByDescending id
             |> List.windowed 5
             |> List.tryFind(fun window ->
                 window
                 |> List.pairwise
-                |> List.forall (fun (a,b) -> (int a) - (int b) = 1))
+                |> List.forall (fun (a,b) -> (int a) - 1 = (int b)))
             |> function
                 | None -> None
                 | Some found ->
