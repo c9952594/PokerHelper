@@ -13,8 +13,8 @@ type ``matchHand test`` ()=
         testHands
         |> List.iter(fun hand ->
             let parsed =  parseHand hand.cards
-            parsed.Value.rank.ShouldBe hand.handType
-            parsed.Value.hand.ShouldBe hand.hand
+            parsed.rank.ShouldBe hand.handType
+            parsed.hand.ShouldBe hand.hand
             )
 
 
