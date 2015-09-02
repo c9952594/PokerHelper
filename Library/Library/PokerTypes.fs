@@ -38,8 +38,9 @@ type HandType =
     | TwoPair = 3
     | Pair = 2
     | HighCard = 1
+    | Unknown = 0
 
 type RankedHand = { 
     rank:HandType; 
-    hand:Hand; 
-    ranking:list<int> }
+    hand:Hand
+    }

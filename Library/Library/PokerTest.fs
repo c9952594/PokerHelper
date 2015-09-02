@@ -5,6 +5,7 @@ open FsUnit
 open PokerTypes
 open Poker
 open PokerData
+open Shouldly
 
 type ``matchHand test`` ()=   
     [<Test>] member test.
@@ -12,9 +13,8 @@ type ``matchHand test`` ()=
         testHands
         |> List.iter(fun hand ->
             let parsed =  parseHand hand.cards
-            parsed.Value.rank |> should equal hand.handType
-            parsed.Value.hand |> should equal hand.hand
-            parsed.Value.ranking |> should equal hand.ranking
+            parsed.Value.rank.ShouldBe hand.handType
+            parsed.Value.hand.ShouldBe hand.hand
             )
 
 
