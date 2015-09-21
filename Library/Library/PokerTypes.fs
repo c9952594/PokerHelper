@@ -26,7 +26,7 @@ type Card = {
     suit: Suit; 
     rank: Rank }
 
-type Hand = list<Card>
+type Cards = list<Card>
 
 type HandType = 
     StraightFlush = 9
@@ -42,5 +42,5 @@ type HandType =
 
 type RankedHand = { 
     rank:HandType; 
-    hand:Hand
+    hand:Cards
     }
